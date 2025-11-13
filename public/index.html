@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Auth Demo</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 720px; margin: 24px auto; padding: 0 16px; }
+    form { border: 1px solid #ddd; padding: 16px; margin-bottom: 12px; border-radius: 8px; }
+    label { display:block; margin:8px 0 4px; }
+    input { width:100%; padding:8px; box-sizing:border-box; }
+    button { padding:8px 12px; margin-top:10px; }
+    #message { margin:8px 0; color: green; }
+    #error { margin:8px 0; color: red; }
+  </style>
+</head>
+<body>
+  <h1>Simple Signup / Login</h1>
+
+  <div id="message"></div>
+  <div id="error"></div>
+
+  <form id="signupForm">
+    <h3>Create account</h3>
+    <label for="su_email">Email</label>
+    <input id="su_email" name="email" type="email" required />
+    <label for="su_password">Password</label>
+    <input id="su_password" name="password" type="password" required />
+    <button type="submit">Sign Up</button>
+  </form>
+
+  <form id="loginForm">
+    <h3>Login</h3>
+    <label for="li_email">Email</label>
+    <input id="li_email" name="email" type="email" required />
+    <label for="li_password">Password</label>
+    <input id="li_password" name="password" type="password" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <div>
+    <h3>Your profile</h3>
+    <button id="loadProfile">Load profile</button>
+    <button id="logoutBtn">Logout</button>
+    <pre id="profile"></pre>
+  </div>
+
+  <script>
+    const messageEl = document.getElementById('message');
+    const errorEl = document.getElementById('error');
+    const profileEl = document.getElementById('profile');
+
+    function showMsg(text) { messageEl.textContent = text; errorEl.textContent = ''; }
+    function showErr(text) { errorEl.textContent = text; messageEl.textContent = ''; }
+
+    async function postJSON(url, data) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return res.json();
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('su_email').value;
+      const password = document.getElementById('su_password').value;
+      const res = await postJSON('/signup', { email, password });
+      if (res.success) showMsg('Account created and logged in as ' + res.email);
+      else showErr(res.error || 'Signup failed');
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('li_email').value;
+      const password = document.getElementById('li_password').value;
+      const res = await postJSON('/login', { email, password });
+      if (res.success) showMsg('Logged in as ' + res.email);
+      else showErr(res.error || 'Login failed');
+    });
+
+    document.getElementById('loadProfile').addEventListener('click', async () => {
+      const res = await fetch('/profile');
+      const json = await res.json();
+      if (res.ok) {
+        profileEl.textContent = JSON.stringify(json.user, null, 2);
+        showMsg('Profile loaded');
+      } else {
+        showErr(json.error || 'Could not load profile');
+        profileEl.textContent = '';
+      }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      const res = await postJSON('/logout', {});
+      if (res.success) {
+        showMsg('Logged out');
+        profileEl.textContent = '';
+      } else showErr(res.error || 'Logout failed');
+    });
+  </script>
+</body>
+</html>
